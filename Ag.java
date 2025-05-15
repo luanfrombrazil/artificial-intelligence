@@ -5,7 +5,7 @@ import java.util.List;
 public class Ag {
 
     public static Ind executar(int nPop, int nElite, IndFactory indFac, int nGer, boolean isMin) {
-
+        long tempo_inicial = System.currentTimeMillis();
         List<Ind> popIni = new ArrayList(nPop);
         List<Ind> newPop = new ArrayList(nPop);
         for (int i = 0; i < nPop; i++) {
@@ -37,13 +37,18 @@ public class Ag {
             join.addAll(popIni);
             join.addAll(popMutantes);
             join.addAll(popFilhos);
+            boolean melhor_encontrado = false;
 
+            newPop.clear();
             for (int i = 0; i < nElite; i++) {
                 NRainhasInd melhor = (NRainhasInd) join.get(0);
                 for (int j = 1; j < join.size(); j++) {
                     if (join.get(j).getAvaliacao() < melhor.getAvaliacao()) {
                         melhor = (NRainhasInd) join.get(j);
                     }
+                }
+                if (melhor.getAvaliacao() == 0.0) {
+                    melhor_encontrado = true;
                 }
                 newPop.add(melhor);
                 join.remove(melhor);
@@ -55,7 +60,28 @@ public class Ag {
             }
 
             popIni.clear();
+
             popIni.addAll(newPop);
+
+            NRainhasInd melhor = (NRainhasInd) popIni.get(0);
+            for (int j = 1; j < popIni.size(); j++) {
+                if (popIni.get(j).getAvaliacao() < melhor.getAvaliacao()) {
+                    melhor = (NRainhasInd) popIni.get(j);
+                }
+            }
+
+            System.out.println("=============== GERACAO" + g + " ===============");
+            for (Ind ind : popIni) {
+                System.out.println(ind);
+            }
+
+            System.out.println("\nMELHOR DA GERACAO G" + g + ": " + melhor + "\n==========================================\n\n");
+            if (melhor_encontrado) {
+                long tempo_final = System.currentTimeMillis();
+                System.out.println("INDIVIDUO OTIMO ENCONTRADO, EXECUCAO FINALIZADA COM "+((double)(tempo_final-tempo_inicial)/1000)+"s");
+                return melhor;
+            }
+
         }
 
         NRainhasInd melhor = (NRainhasInd) popIni.get(0);
@@ -64,6 +90,8 @@ public class Ag {
                 melhor = (NRainhasInd) popIni.get(j);
             }
         }
+        long tempo_final = System.currentTimeMillis();
+        System.out.println("EXECUCAO FINALIZADA COM "+((double)(tempo_final-tempo_inicial)/1000)+"s");
         return melhor;
     }
 }

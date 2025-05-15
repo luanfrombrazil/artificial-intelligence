@@ -54,7 +54,7 @@ public class NRainhasInd implements Ind {
                 int novoValor;
                 do {
                     novoValor = random.nextInt(n);
-                } while (novoValor == novosGenes[i]); // garante que o gene realmente mude
+                } while (novoValor == novosGenes[i]);
                 novosGenes[i] = novoValor;
                 mutou = true;
             }
