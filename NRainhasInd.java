@@ -1,5 +1,6 @@
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -10,10 +11,17 @@ public class NRainhasInd implements Ind {
     private static final Random random = new Random();
 
     public NRainhasInd(int n) {
+        List<Integer> numeros = new ArrayList<>();
+        for (int i = 0; i <= n; i++) {
+            numeros.add(i);
+        }
+
+        Collections.shuffle(numeros);
+
         this.n = n;
         this.genes = new int[n];
         for (int i = 0; i < n; i++) {
-            genes[i] = random.nextInt(n);
+            genes[i] = numeros.remove(0);
         }
     }
 
@@ -50,22 +58,21 @@ public class NRainhasInd implements Ind {
         boolean mutou = false;
 
         for (int i = 0; i < n; i++) {
-            if (random.nextDouble() < 0.2) {
-                int novoValor;
-                do {
-                    novoValor = random.nextInt(n);
-                } while (novoValor == novosGenes[i]);
-                novosGenes[i] = novoValor;
+            if (random.nextDouble() < 0.5) {
+                int troca1 = random.nextInt(n);
+                int troca2 = random.nextInt(n);
+                int aux = novosGenes[troca1];
+                novosGenes[troca1] = novosGenes[troca2];
+                novosGenes[troca2] = aux;
                 mutou = true;
             }
         }
         if (!mutou) {
-            int pos = random.nextInt(n);
-            int novoValor;
-            do {
-                novoValor = random.nextInt(n);
-            } while (novoValor == novosGenes[pos]);
-            novosGenes[pos] = novoValor;
+            int troca1 = random.nextInt(n);
+            int troca2 = random.nextInt(n);
+            int aux = novosGenes[troca1];
+            novosGenes[troca1] = novosGenes[troca2];
+            novosGenes[troca2] = aux;
         }
 
         return new NRainhasInd(novosGenes);
