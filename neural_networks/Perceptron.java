@@ -1,140 +1,129 @@
 package neural_networks;
 
-import java.text.DecimalFormat;
 import java.util.Random;
 
-class Perceptron {
+public class Perceptron {
     private double[][] w;
-    private int qtdIn;
-    private int qtdOut;
-    private double NI;
-    private Random r;
+    private double ni;
+    private Base base;
+    private int epochs;
+    private final int in;
+    private final int out;
+    public Statistics statistics;
 
-
-    public Perceptron(int qtdIn, int qtdOut) {
-        this.qtdIn = qtdIn;
-        this.qtdOut = qtdOut;
-        this.NI = .3;
-        this.w = new double[qtdIn + 1][qtdOut];
-        this.r = new Random();
+    public Perceptron(Base base, int epochs, double ni, double random_range) {
+        this.base = base;
+        this.epochs = epochs > 0 ? epochs : 1000;
+        this.ni = ni;
+        this.in = base.getIn();
+        this.out = base.getOut();
+        this.w = new double[in + 1][out];
+        Random random = new Random();
         for (int i = 0; i < w.length; i++) {
             for (int j = 0; j < w[0].length; j++) {
-                w[i][j] = r.nextDouble(0.6) - 0.3;
+                w[i][j] = random.nextDouble(random_range * 2) - random_range;
             }
         }
     }
 
-    public Perceptron(int qtdIn, int qtdOut, double ni) {
-        this.qtdIn = qtdIn;
-        this.qtdOut = qtdOut;
-        this.NI = ni;
-        this.w = new double[qtdIn + 1][qtdOut];
-        this.r = new Random();
-        for (int i = 0; i < w.length; i++) {
-            for (int j = 0; j < w[0].length; j++) {
-                w[i][j] = r.nextDouble(0.6) - 0.3;
+    public void train(boolean statistics) {
+        if (statistics) this.statistics = new Statistics(epochs,base);
+        for (int epoch = 0; epoch < epochs; epoch++) {
+            for (int line = 0; line < base.length; line++) {
+                double[] x = new double[in + 1];
+                x[in] = 1;
+                for (int i = 0; i < in; i++) {
+                    x[i] = this.base.getInput_data()[line][i];
+                }
+
+                double[] guess = new double[out];
+                for (int j = 0; j < out; j++) {
+                    double u = 0;
+                    for (int i = 0; i < in + 1; i++) {
+                        u += x[i] * w[i][j];
+                    }
+                    guess[j] = sigmoid(u);
+                }
+
+                if (statistics) {
+                    boolean wrong_sample = false;
+                    for (int i = 0; i < out; i++) {
+                        double normalized = guess[i] > 0.5 ? 1 : 0;
+                        if (normalized != base.getOutput_data()[line][i]) {
+                            wrong_sample = true;
+                            break;
+                        }
+                    }
+                    this.statistics.append_classification(epoch, wrong_sample);
+                }
+
+                if (statistics) this.statistics.append_error(epoch, calculateError(line, guess));
+
+                for (int j = 0; j < out; j++) {
+                    double delta = (base.getOutput_data()[line][j] - guess[j]) * guess[j] * (1 - guess[j]);
+                    for (int i = 0; i < in + 1; i++) {
+                        w[i][j] += ni * delta * x[i];
+                    }
+                }
             }
+            test(epoch, statistics);
         }
     }
 
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        DecimalFormat df = new DecimalFormat("#.##");
-        sb.append("P:{\n");
-        for (double[] darray : this.w) {
-            sb.append("{");
-            for (double d : darray) {
-                sb.append(df.format(d) + ", ");
+    public void test(int epoch, boolean statistics) {
+        if (!statistics) return;
+        for (int line = 0; line < base.test_length; line++) {
+            double[] x = new double[in + 1];
+            x[in] = 1;
+            for (int i = 0; i < in; i++) {
+                x[i] = this.base.getTest_input_data()[line][i];
             }
-            sb.append("}\n");
+
+            double[] guess = new double[out];
+            for (int j = 0; j < out; j++) {
+                double u = 0;
+                for (int i = 0; i < in + 1; i++) {
+                    u += x[i] * w[i][j];
+                }
+                guess[j] = sigmoid(u);
+            }
+
+            boolean wrong_sample = false;
+            for (int i = 0; i < out; i++) {
+                double normalized = guess[i] > 0.5 ? 1 : 0;
+                if (normalized != base.getTest_output_data()[line][i]) {
+                    wrong_sample = true;
+                    break;
+                }
+            }
+            this.statistics.append_test_classification_error(epoch, wrong_sample);
+            this.statistics.append_test_error(epoch, calculateTestError(line, guess));
         }
-        sb.append("}");
-        return sb.toString();
     }
 
-    public double[] treinar(double[] x_in, double[] y_in) {
-        double[] x = new double[x_in.length + 1];
-        x[0] = 1;
-        for (int i = 1; i < x.length; i++) {
-            x[i] = x_in[i - 1];
-        }
-        double[] out = new double[this.qtdOut];
-        for (int j = 0; j < qtdOut; j++) {
-            double u = 0;
-            for (int i = 0; i < qtdIn + 1; i++) {
-                u += x[i] * w[i][j];
-            }
-            /*
-            UTILIZANDO A FUNÇÃO RELU PARA CALCULAR O ERRO E TREINAR A REDE NEURAL
-            */
-
-            out[j] = sigmoid(u);
-            //out[j] = ReLU(u);
-            //out[j] = tanh(u);
-            //out[j] = leakyReLU(u);
-            //out[j] = ELU(u);
-            //out[j] = u;
-        }
-        double[][] delta_w = new double[w.length][w[0].length];
-        for (int j = 0; j < qtdOut; j++) {
-            for (int i = 0; i < qtdIn + 1; i++) {
-                delta_w[i][j] = this.NI * (y_in[j] - out[j]) * x[i];
-                w[i][j] += delta_w[i][j];
-            }
-        }
-        return out;
-    }
-
-
-    /*
-    ESCREVI ESSA FUNÇÃO APENAS PARA TESTAR O PERCEPTRON DEPOIS DO TREINAMENTO NAS 10K EPOCAS.
-    DADO UMA ENTRADA X_IN ELE RETORNA UM VALOR.
-
-    FIZ DE FORMA QUE O OUTPUT RETORNASSE APENAS 1 E 0, RESPEITANDO O TREINAMENTO DAS PORTAS LÓGICAS AND E OR
-    */
-    public double[] predict(double[] x_in) {
-        double[] x = new double[x_in.length + 1];
-        x[0] = 1;
-        for (int i = 1; i < x.length; i++) {
-            x[i] = x_in[i - 1];
-        }
-        double[] out = new double[this.qtdOut];
-        for (int j = 0; j < qtdOut; j++) {
-            double u = 0;
-            for (int i = 0; i < qtdIn + 1; i++) {
-                u += x[i] * w[i][j];
-            }
-            out[j] = sigmoid(u);
-            //out[j] = ReLU(u);
-            //out[j] = tanh(u);
-            //out[j] = leakyReLU(u);
-            //out[j] = ELU(u);
-            //out[j] = u;
-        }
-        return out;
-    }
-
-    public double ReLU(double u) {
-        return Math.max(0, u);
+    public void status(boolean head, boolean body) {
+        System.out.println(statistics.getData(head, body));
     }
 
     public double sigmoid(double u) {
         return 1 / (1 + Math.exp(-u));
     }
 
-    public double tanh(double u) {
-        return Math.tanh(u);
+    public double calculateError(int line, double[] guess) {
+        double total_error = 0.0;
+        double[] expected_output = this.base.getOutput_data()[line];
+        for (int j = 0; j < this.out; j++) {
+            total_error += Math.abs(expected_output[j] - guess[j]);
+        }
+        return total_error;
     }
 
-    public double leakyReLU(double u) {
-        double alpha = 0.01;
-        return u > 0 ? u : alpha * u;
+    public double calculateTestError(int line, double[] guess) {
+        double total_error = 0.0;
+        double[] expected_output = this.base.getTest_output_data()[line];
+        for (int j = 0; j < this.out; j++) {
+            total_error += Math.abs(expected_output[j] - guess[j]);
+        }
+        return total_error;
     }
-
-    public double ELU(double u) {
-        double alpha = 1.0;
-        return u > 0 ? u : alpha * (Math.exp(u) - 1);
-    }
-
 }

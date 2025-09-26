@@ -5,110 +5,195 @@ import java.util.Random;
 public class MultilayerPerceptron {
     private double[][] wh;
     private double[][] w_theta;
-    private int qtdIn;
-    private int qtdOut;
-    private int qtdHidden;
     private double ni;
     private Random random;
+    private Base base;
 
-    public MultilayerPerceptron(int qtdIn, int qtdHidden, int qtdOut, double ni) {
-        this.qtdIn = qtdIn;
-        this.qtdOut = qtdOut;
-        this.qtdHidden = qtdHidden;
-        this.random = new Random();
-        
-        this.wh = new double[qtdIn + 1][qtdHidden];
-        this.w_theta = new double[qtdHidden + 1][qtdOut];
+    private int epochs;
+
+    private final int in;
+    private final int out;
+    private final int hidden;
+
+    public Statistics statistics;
+
+
+    public void status(boolean head, boolean body) {
+        System.out.println(statistics.getData(head, body));
+    }
+
+    public MultilayerPerceptron(Base base, int epochs, double ni, double random_range) {
+        this.base = base;
         this.ni = ni;
+
+        this.hidden = base.getHidden();
+        this.in = base.getIn();
+        this.out = base.getOut();
+
+
+        this.epochs = epochs > 0 ? epochs : 1000;
+
+        this.random = new Random();
+
+        this.wh = new double[in + 1][hidden];
+        this.w_theta = new double[hidden + 1][out];
+
         for (int i = 0; i < wh.length; i++) {
             for (int j = 0; j < wh[0].length; j++) {
-                wh[i][j] = random.nextDouble(0.6) - 0.3;
+                wh[i][j] = random.nextDouble(random_range * 2) - random_range;
             }
         }
         for (int i = 0; i < w_theta.length; i++) {
             for (int j = 0; j < w_theta[0].length; j++) {
-                w_theta[i][j] = random.nextDouble(0.6) - 0.3;
+                w_theta[i][j] = random.nextDouble(random_range * 2) - random_range;
             }
         }
     }
 
-    public MultilayerPerceptron(int qtdIn, int qtdOut, double ni) {
-        this(qtdIn,(qtdIn + qtdOut) / 2,qtdOut,ni);
+    public void train(boolean statistics) {
+        if (statistics) this.statistics = new Statistics(epochs,base);
+        for (int epoch = 0; epoch < epochs; epoch++) {
+            double[] guess = new double[out];
+            for (int line = 0; line < base.length; line++) {
+                double[] x = new double[in + 1];
+                x[in] = 1;
+                for (int i = 0; i < in; i++) {
+                    x[i] = this.base.getInput_data()[line][i];
+                }
+
+                double[] hidden_layer = new double[hidden + 1];
+
+                for (int h = 0; h < wh[0].length; h++) {
+                    double u = 0;
+                    for (int i = 0; i < wh.length; i++) {
+                        u += x[i] * wh[i][h];
+                    }
+                    hidden_layer[h] = sigmoid(u);
+                }
+                hidden_layer[hidden_layer.length - 1] = 1;
+
+
+                for (int j = 0; j < w_theta[0].length; j++) {
+                    double u = 0;
+                    for (int h = 0; h < w_theta.length; h++) {
+                        u += hidden_layer[h] * w_theta[h][j];
+                    }
+                    guess[j] = sigmoid(u);
+                }
+
+                if (statistics) {
+                    boolean wrong_sample = false;
+                    for (int i = 0; i < out; i++) {
+                        double normalized = guess[i] > 0.5 ? 1 : 0;
+                        if (normalized != base.getOutput_data()[line][i]) {
+                            wrong_sample = true;
+                            break;
+                        }
+                    }
+                    this.statistics.append_classification(epoch, wrong_sample);
+                }
+
+                if (statistics) this.statistics.append_error(epoch, calculateError(line, guess));
+
+                //VERIFICAR ESSA PORÇÃO
+                double[] delta_theta = new double[out];
+                for (int j = 0; j < out; j++) {
+                    delta_theta[j] = (base.getOutput_data()[line][j] - guess[j]) * guess[j] * (1 - guess[j]);
+                }
+
+                double[] delta_h = new double[hidden];
+                for (int h = 0; h < hidden; h++) {
+                    double soma = 0;
+                    for (int j = 0; j < out; j++) {
+
+                        soma += delta_theta[j] * w_theta[h][j];
+                    }
+
+                    delta_h[h] = soma * hidden_layer[h] * (1 - hidden_layer[h]);
+                }
+
+                for (int j = 0; j < out; j++) {
+                    for (int h = 0; h < hidden + 1; h++) {
+                        w_theta[h][j] += ni * delta_theta[j] * hidden_layer[h];
+                    }
+                }
+
+                for (int h = 0; h < hidden; h++) {
+                    for (int i = 0; i < in + 1; i++) {
+                        wh[i][h] += ni * delta_h[h] * x[i];
+                    }
+                }
+            }
+            test(epoch, statistics);
+        }
     }
 
-    public double[] treinar(double[] x_in, double[] y) {
-        double[] x = new double[x_in.length + 1];
-        x[x_in.length] = 1;
-        for (int i = 0; i < x_in.length; i++) {
-            x[i] = x_in[i];
-        }
-
-        double[] hidden = new double[qtdHidden + 1];
-
-        for (int h = 0; h < wh[0].length; h++) {
-            double u = 0;
-            for (int i = 0; i < wh.length; i++) {
-                u += x[i] * wh[i][h];
+    public void test(int epoch, boolean statistics) {
+        double[] guess = new double[out];
+        for (int line = 0; line < base.test_length; line++) {
+            double[] x = new double[in + 1];
+            x[in] = 1;
+            for (int i = 0; i < in; i++) {
+                x[i] = this.base.getTest_input_data()[line][i];
             }
-            hidden[h] = sigmoid(u);
-        }
-        hidden[hidden.length - 1] = 1;
 
-        double[] out = new double[qtdOut];
-        for (int j = 0; j < w_theta[0].length; j++) {
-            double u = 0;
-            for (int h = 0; h < w_theta.length; h++) {
-                u += hidden[h] * w_theta[h][j];
-            }
-            out[j] = sigmoid(u);
-        }
+            double[] hidden_layer = new double[hidden + 1];
 
-        double[] delta_theta = new double[qtdOut];
-        for (int j = 0; j < qtdOut; j++) {
-            delta_theta[j] = out[j] * (1 - out[j]) * (y[j] - out[j]);
-        }
-        double[] delta_h = new double[qtdHidden];
-        for (int h = 0; h < qtdHidden; h++) {
-            delta_h[h] = hidden[h] * (1 - hidden[h]);
-            double soma = 0;
-            for (int j = 0; j < qtdOut; j++) {
-                soma += delta_theta[j] * w_theta[h][j];
+            for (int h = 0; h < wh[0].length; h++) {
+                double u = 0;
+                for (int i = 0; i < wh.length; i++) {
+                    u += x[i] * wh[i][h];
+                }
+                hidden_layer[h] = sigmoid(u);
             }
-            delta_h[h] *= soma;
-        }
+            hidden_layer[hidden_layer.length - 1] = 1;
 
-        for (int j = 0; j < w_theta[0].length; j++) {
-            for (int h = 0; h < w_theta.length; h++) {
-                w_theta[h][j] += ni*delta_theta[j]*hidden[h];
-            }
-        }
-        for (int h = 0; h < wh[0].length; h++) {
-            for (int i = 0; i < wh.length; i++) {
-                wh[i][h] += ni*delta_h[h]*x[i];
-            }
-        }
-        return out;
-    }
 
-    public double ReLU(double u) {
-        return Math.max(0, u);
+            for (int j = 0; j < w_theta[0].length; j++) {
+                double u = 0;
+                for (int h = 0; h < w_theta.length; h++) {
+                    u += hidden_layer[h] * w_theta[h][j];
+                }
+                guess[j] = sigmoid(u);
+            }
+
+            if (statistics) {
+                boolean wrong_sample = false;
+                for (int i = 0; i < out; i++) {
+                    double normalized = guess[i] > 0.5 ? 1 : 0;
+                    if (normalized != base.getTest_output_data()[line][i]) {
+                        wrong_sample = true;
+                        break;
+                    }
+                }
+                this.statistics.append_test_classification_error(epoch, wrong_sample);
+            }
+
+            if (statistics) this.statistics.append_test_error(epoch, calculateTestError(line, guess));
+        }
     }
 
     public double sigmoid(double u) {
         return 1 / (1 + Math.exp(-u));
     }
 
-    public double tanh(double u) {
-        return Math.tanh(u);
+    public double calculateError(int line, double[] guess) {
+        double total_error = 0.0;
+        double[] expected_output = this.base.getOutput_data()[line];
+        for (int j = 0; j < this.out; j++) {
+            double erro = Math.abs(expected_output[j] - guess[j]);
+            total_error += erro;
+        }
+        return total_error;
     }
 
-    public double leakyReLU(double u) {
-        double alpha = 0.01;
-        return u > 0 ? u : alpha * u;
-    }
-
-    public double ELU(double u) {
-        double alpha = 1.0;
-        return u > 0 ? u : alpha * (Math.exp(u) - 1);
+    public double calculateTestError(int line, double[] guess) {
+        double total_error = 0.0;
+        double[] expected_output = this.base.getTest_output_data()[line];
+        for (int j = 0; j < this.out; j++) {
+            double erro = Math.abs(expected_output[j] - guess[j]);
+            total_error += erro;
+        }
+        return total_error;
     }
 }
