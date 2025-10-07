@@ -1,4 +1,4 @@
-package neural_networks;
+package neural_networks.utils;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,7 +23,7 @@ public class Base {
     // No arquivo Base.java
     public Base(String name) {
         this.name = name.toUpperCase();
-        String trainPath = "in/datasets/" + name + "/" + name + ".train";
+        String trainPath = "bases/datasets/" + name + "/" + name + ".train";
 
         // Bloco Try-Catch para o arquivo de TREINO
         try (Scanner sc = new Scanner(new File(trainPath))) {
@@ -49,7 +49,7 @@ public class Base {
         }
 
         // Bloco Try-Catch SEPARADO para o arquivo de TESTE
-        String testPath = "in/datasets/" + name + "/" + name + ".test";
+        String testPath = "bases/datasets/" + name + "/" + name + ".test";
         try (Scanner ts = new Scanner(new File(testPath))) {
             this.test_length = ts.nextInt();
             // Pula a leitura de in/out do arquivo de teste, pois já foram definidos
@@ -131,13 +131,13 @@ public class Base {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        for (int l = 0; l < length; l++) {
+        for (int l = 0; l < test_length; l++) {
             for (int j = 0; j < in; j++) {
-                sb.append((int) input_data[l][j]);
+                sb.append((int) test_input_data[l][j]);
                 sb.append(" ");
             }
             for (int j = 0; j < out; j++) {
-                sb.append((int) output_data[l][j]);
+                sb.append((int) test_output_data[l][j] == 1 ? 0.995 : 0.005);
                 sb.append(" ");
             }
             sb.append("\n");

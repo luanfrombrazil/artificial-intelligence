@@ -1,4 +1,7 @@
-package neural_networks;
+package neural_networks.core;
+
+import neural_networks.utils.Base;
+import neural_networks.utils.Statistics;
 
 import java.util.Random;
 
@@ -27,7 +30,7 @@ public class Perceptron {
     }
 
     public void train(boolean statistics) {
-        if (statistics) this.statistics = new Statistics(epochs,base);
+        if (statistics) this.statistics = new Statistics(epochs, base);
         for (int epoch = 0; epoch < epochs; epoch++) {
             for (int line = 0; line < base.length; line++) {
                 double[] x = new double[in + 1];
@@ -48,7 +51,11 @@ public class Perceptron {
                 if (statistics) {
                     boolean wrong_sample = false;
                     for (int i = 0; i < out; i++) {
-                        double normalized = guess[i] > 0.5 ? 1 : 0;
+                        double normalized;
+                        if (base.getOutput_data()[line][i] == 1 || base.getOutput_data()[line][i] == 0)
+                            normalized = guess[i] > 0.5 ? 1 : 0;
+                        else
+                            normalized = guess[i] > 0.5 ? 0.995 : 0.005;
                         if (normalized != base.getOutput_data()[line][i]) {
                             wrong_sample = true;
                             break;
@@ -90,7 +97,11 @@ public class Perceptron {
 
             boolean wrong_sample = false;
             for (int i = 0; i < out; i++) {
-                double normalized = guess[i] > 0.5 ? 1 : 0;
+                double normalized;
+                if (base.getOutput_data()[line][i] == 1 || base.getOutput_data()[line][i] == 0)
+                    normalized = guess[i] > 0.5 ? 1 : 0;
+                else
+                    normalized = guess[i] > 0.5 ? 0.995 : 0.005;
                 if (normalized != base.getTest_output_data()[line][i]) {
                     wrong_sample = true;
                     break;
@@ -102,7 +113,7 @@ public class Perceptron {
     }
 
     public void status(boolean head, boolean body) {
-        System.out.println(statistics.getData(head, body));
+        statistics.printData(head, body);
     }
 
     public double sigmoid(double u) {

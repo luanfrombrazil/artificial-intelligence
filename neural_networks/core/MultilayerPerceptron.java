@@ -1,4 +1,7 @@
-package neural_networks;
+package neural_networks.core;
+
+import neural_networks.utils.Base;
+import neural_networks.utils.Statistics;
 
 import java.util.Random;
 
@@ -18,8 +21,8 @@ public class MultilayerPerceptron {
     public Statistics statistics;
 
 
-    public void status(boolean head, boolean body) {
-        System.out.println(statistics.getData(head, body));
+    public void printLog(boolean head, boolean body) {
+        statistics.printData(head, body);
     }
 
     public MultilayerPerceptron(Base base, int epochs, double ni, double random_range) {
@@ -50,8 +53,8 @@ public class MultilayerPerceptron {
         }
     }
 
-    public void train(boolean statistics) {
-        if (statistics) this.statistics = new Statistics(epochs,base);
+    public void train() {
+        this.statistics = new Statistics(epochs, base);
         for (int epoch = 0; epoch < epochs; epoch++) {
             double[] guess = new double[out];
             for (int line = 0; line < base.length; line++) {
@@ -81,21 +84,24 @@ public class MultilayerPerceptron {
                     guess[j] = sigmoid(u);
                 }
 
-                if (statistics) {
-                    boolean wrong_sample = false;
-                    for (int i = 0; i < out; i++) {
-                        double normalized = guess[i] > 0.5 ? 1 : 0;
-                        if (normalized != base.getOutput_data()[line][i]) {
-                            wrong_sample = true;
-                            break;
-                        }
+
+                boolean wrong_sample = false;
+                for (int i = 0; i < out; i++) {
+                    double normalized;
+                    if (base.getOutput_data()[line][i] == 1 || base.getOutput_data()[line][i] == 0)
+                        normalized = guess[i] > 0.5 ? 1 : 0;
+                    else
+                        normalized = guess[i] > 0.5 ? 0.995 : 0.005;
+
+                    if (normalized != base.getOutput_data()[line][i]) {
+                        wrong_sample = true;
+                        break;
                     }
-                    this.statistics.append_classification(epoch, wrong_sample);
                 }
+                this.statistics.append_classification(epoch, wrong_sample);
+                this.statistics.append_error(epoch, calculateError(line, guess));
 
-                if (statistics) this.statistics.append_error(epoch, calculateError(line, guess));
 
-                //VERIFICAR ESSA PORÇÃO
                 double[] delta_theta = new double[out];
                 for (int j = 0; j < out; j++) {
                     delta_theta[j] = (base.getOutput_data()[line][j] - guess[j]) * guess[j] * (1 - guess[j]);
@@ -124,11 +130,11 @@ public class MultilayerPerceptron {
                     }
                 }
             }
-            test(epoch, statistics);
+            test(epoch);
         }
     }
 
-    public void test(int epoch, boolean statistics) {
+    public void test(int epoch) {
         double[] guess = new double[out];
         for (int line = 0; line < base.test_length; line++) {
             double[] x = new double[in + 1];
@@ -136,9 +142,7 @@ public class MultilayerPerceptron {
             for (int i = 0; i < in; i++) {
                 x[i] = this.base.getTest_input_data()[line][i];
             }
-
             double[] hidden_layer = new double[hidden + 1];
-
             for (int h = 0; h < wh[0].length; h++) {
                 double u = 0;
                 for (int i = 0; i < wh.length; i++) {
@@ -147,8 +151,6 @@ public class MultilayerPerceptron {
                 hidden_layer[h] = sigmoid(u);
             }
             hidden_layer[hidden_layer.length - 1] = 1;
-
-
             for (int j = 0; j < w_theta[0].length; j++) {
                 double u = 0;
                 for (int h = 0; h < w_theta.length; h++) {
@@ -157,19 +159,23 @@ public class MultilayerPerceptron {
                 guess[j] = sigmoid(u);
             }
 
-            if (statistics) {
-                boolean wrong_sample = false;
-                for (int i = 0; i < out; i++) {
-                    double normalized = guess[i] > 0.5 ? 1 : 0;
-                    if (normalized != base.getTest_output_data()[line][i]) {
-                        wrong_sample = true;
-                        break;
-                    }
-                }
-                this.statistics.append_test_classification_error(epoch, wrong_sample);
-            }
+            boolean wrong_sample = false;
+            for (int i = 0; i < out; i++) {
+                double normalized;
+                if (base.getTest_output_data()[line][i] == 1 || base.getTest_output_data()[line][i] == 0)
+                    normalized = guess[i] > 0.5 ? 1 : 0;
+                else
+                    normalized = guess[i] > 0.5 ? 0.995 : 0.005;
 
-            if (statistics) this.statistics.append_test_error(epoch, calculateTestError(line, guess));
+                if (normalized != base.getTest_output_data()[line][i]) {
+                    wrong_sample = true;
+                    break;
+                }
+            }
+            this.statistics.append_test_classification_error(epoch, wrong_sample);
+
+
+            this.statistics.append_test_error(epoch, calculateTestError(line, guess));
         }
     }
 
