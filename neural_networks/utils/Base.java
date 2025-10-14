@@ -56,11 +56,9 @@ public class Base {
             e.printStackTrace();
         }
 
-        // Bloco Try-Catch SEPARADO para o arquivo de TESTE
         String testPath = "bases/datasets/" + name + "/" + name + ".test";
         try (Scanner ts = new Scanner(new File(testPath))) {
             this.test_length = ts.nextInt();
-            // Pula a leitura de in/out do arquivo de teste, pois já foram definidos
             ts.nextInt();
             ts.nextInt();
 

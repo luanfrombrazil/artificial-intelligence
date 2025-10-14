@@ -79,4 +79,34 @@ public class FileUtils {
             e.printStackTrace();
         }
     }
+
+//    public void appendAtTheEnd(String base) {
+//            String inputFilePath = "bases/datasets/" + base;
+//            try (Scanner sc = new Scanner(new File(inputFilePath))) {
+//                BufferedWriter bw = new BufferedWriter(new FileWriter(inputFilePath + "-n", true));
+//                while (sc.hasNext()) {
+//                    StringBuilder sb = new StringBuilder();
+//                    for (int j = 0; j < 10; j++) {
+//                        sb.append(sc.nextDouble() + "");
+//                        sb.append(" ");
+//                    }
+//                    sc.nextDouble();
+//                    for (int j = 1; j <= 29; j++) {
+//                        if (j == i)
+//                            sb.append("1 ");
+//                        else
+//                            sb.append("0 ");
+//                    }
+//                    String test = sb.toString();
+////                    System.out.println(test);
+//
+//                    bw.write(test);
+//                    bw.newLine();
+//                    bw.flush();
+//                }
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//    }
 }

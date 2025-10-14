@@ -49,12 +49,13 @@ public class NeuralNetwork {
 
                 double[] delta = new double[target.length];
                 for (int j = 0; j < target.length; j++) {
-                    delta[j] = (target[j] - prediction[j]) * prediction[j] * (1 - prediction[j]) * Math.abs((1 - prediction[j]));
+                    delta[j] = target[j] - prediction[j];
                 }
 
                 for (int j = layers.size() - 1; j >= 0; j--) {
                     delta = layers.get(j).backward(delta);
                 }
+
                 for (Layer layer : layers) {
                     layer.updateParameters(learningRate);
                 }

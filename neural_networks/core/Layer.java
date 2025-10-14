@@ -16,7 +16,9 @@ public class Layer {
     private double[] lastInputs;
     private double[] lastOutputs;
 
-    public Layer(int nInputs, int nNeurons, ActivationFunction activationFunction, double randomRange, boolean isLastLayer) {
+    boolean lastlayer;
+
+    public Layer(int nInputs, int nNeurons, ActivationFunction activationFunction, double randomRange, boolean lastlayer) {
 
         this.activationFunction = activationFunction;
         this.weights = new double[nInputs][nNeurons];
@@ -34,6 +36,7 @@ public class Layer {
 
         this.weightGradients = new double[nInputs][nNeurons];
         this.biasGradients = new double[nNeurons];
+        this.lastlayer = lastlayer;
     }
 
     public double[] forward(double[] inputs) {
@@ -58,11 +61,16 @@ public class Layer {
     public double[] backward(double[] deltaFromNextLayer) {
         int nInputs = lastInputs.length;
         int nNeurons = biases.length;
-        double[] deltaForPreviousLayer = new double[nInputs]; // Erro a ser passado para trás
+        double[] deltaForPreviousLayer = new double[nInputs];
 
         for (int j = 0; j < nNeurons; j++) {
             double derivative = this.activationFunction.derivative(this.lastOutputs[j]);
+
             double delta = deltaFromNextLayer[j] * derivative;
+
+            if (lastlayer) {
+                delta *= Math.abs(1 - this.lastOutputs[j]);
+            }
 
             biasGradients[j] = delta;
             for (int i = 0; i < nInputs; i++) {

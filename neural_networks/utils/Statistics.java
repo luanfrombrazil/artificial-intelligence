@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class Statistics {
     private final String baseName;
@@ -26,14 +27,19 @@ public class Statistics {
         testClassificationErrorHistory.add(testClassificationErrors);
 
         int epoch = trainMseHistory.size();
-        System.out.printf("Época: %-5d | Erros Treino: %-4d | Erros Teste: %-4d | MSE Treino: %.6f | MSE Teste: %.6f \n",
-                epoch, trainClassificationErrors, testClassificationErrors, trainMse, testMse);
+
+
+        if (epoch % 50 == 0)
+            System.out.printf("Época: %-5d | Erros Treino: %-4d | Erros Teste: %-4d | MSE Treino: %.6f | MSE Teste: %.6f \n",
+                    epoch, trainClassificationErrors, testClassificationErrors, trainMse, testMse);
+        if (epoch == 500)
+            System.out.println();
     }
 
     public void writeDetailedLog(int trainSize, int testSize) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
         String timestamp = LocalDateTime.now().format(formatter);
-        String filename = String.format("[%s] %s.log", timestamp, baseName);
+        String filename = String.format("data/[%s] %s.log", timestamp, baseName);
 
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(filename))) {
             int firstPerfectTrain = findFirstEpochWithZeroErrors(trainClassificationErrorHistory);
@@ -86,13 +92,13 @@ public class Statistics {
     public void exportToCSV() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
         String timestamp = LocalDateTime.now().format(formatter);
-        String filename = String.format("[%s] %s.csv", timestamp, baseName);
+        String filename = String.format("data/[%s] %s.csv", timestamp, baseName);
 
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(filename))) {
             bw.write("epoch,train_mse,train_classification_errors,test_mse,test_classification_errors\n");
 
             for (int i = 0; i < trainMseHistory.size(); i++) {
-                bw.write(String.format("%d,%.8f,%d,%.8f,%d\n",
+                bw.write(String.format(Locale.US, "%d,%.8f,%d,%.8f,%d\n",
                         i + 1,
                         trainMseHistory.get(i),
                         trainClassificationErrorHistory.get(i),

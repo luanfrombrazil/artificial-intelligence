@@ -93,7 +93,7 @@ public class Perceptron {
         statistics.writeDetailedLog(base.length, base.test_length);
     }
 
-    public void generateCSV(){
+    public void generateCSV() {
         statistics.exportToCSV();
     }
 
@@ -134,7 +134,6 @@ public class Perceptron {
 
         return new double[]{totalTestError, classificationErrors};
     }
-
 
 
     public double sigmoid(double u) {
