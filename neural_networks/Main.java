@@ -6,6 +6,7 @@ import neural_networks.activations.Sigmoid;
 import neural_networks.core.MultilayerPerceptron;
 import neural_networks.core.NeuralNetwork;
 import neural_networks.utils.Base;
+import neural_networks.utils.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,14 +14,17 @@ import java.util.ArrayList;
 
 public class Main {
 
-    public static void main(String[] args) {
+    static void main(String[] args) {
 //        FileUtils fs = new FileUtils();
-//        fs.splitFileByLastNumber("bases/datasets/abalone/adapted","bases/datasets/abalone");
+//        fs.splitFileByLastNumber("bases/datasets/abalone/abalone.train", "bases/datasets/abalone/classes");
 //        fs.classIntoNeurons("abalone");
-        Base base = new Base("abalone");
+
+
+        Base base = new Base("abalone",28);
         base.shuffle();
-//        base.normalize();
-                /*
+        base.normalize();
+
+        /*
         A PARTIR DAQUI É UMA IMPLEMENTAÇÃO BEM MAIS ROBUSTA DO PERCEPTRON MULTILAYER, USANDO FUNÇÕES PERSONALIZADAS PARA CADA CAMADA
         E USANDO UM VETOR "ARQUITETURA" PARA DEFINIR OS TAMANHSO DE CADA CAMADA
         */
@@ -39,7 +43,7 @@ public class Main {
 
         int epochs = 10000; //NUMERO DE EPOCAS
 
-        double learningRate = 0.000001; //TAXA DE APRENDIZADO (NI)
+        double learningRate = 0.3; //TAXA DE APRENDIZADO (NI)
 
         double randomRange = 0.3; //RANGE DE VALORES QUE SERÁ UTILIZADO PARA INICIALIZAÇÃO (-0.3 ATÉ 0.3 )
 
@@ -47,6 +51,7 @@ public class Main {
 //        rna.train();
 //        rna.printLog(); //SOUT NOS RESULTADOS
 //        rna.generateCSV(); //GERA UM CSV PARA GERAÇÃO DE GRÁFICOS E RELATÓRIOS
+
         try {
             Thread.sleep(1000);
         } catch (InterruptedException e) {
@@ -57,19 +62,6 @@ public class Main {
         nn.printLog();
         nn.generateCSV();
 
-
-//        try {
-//            plotCharts();
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        } AINDA NAO FUNCIONANDO NAO SEI PQ
-    }
-
-    public static void plotCharts() throws IOException {
-        ProcessBuilder pb = new ProcessBuilder("python", "utils/plotCharts.py");
-        pb.directory(new File("."));
-        pb.redirectErrorStream(true);
-        Process processo = pb.start();
     }
 }
 

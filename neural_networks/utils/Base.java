@@ -2,6 +2,7 @@ package neural_networks.utils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.Scanner;
 
@@ -18,49 +19,21 @@ public class Base {
     private double[][] test_input_data;
     private double[][] test_output_data;
 
-    private int numTrainSamples;
-    private int numTestSamples;
-
-
     private String name;
+    private Random random;
 
     public String getName() {
         return name;
     }
 
-    // No arquivo Base.java
-    public Base(String name) {
-        this.name = name.toUpperCase();
-        String trainPath = "bases/datasets/" + name + "/" + name + ".train";
-
-        // Bloco Try-Catch para o arquivo de TREINO
-        try (Scanner sc = new Scanner(new File(trainPath))) {
-            this.length = sc.nextInt();
-            this.in = sc.nextInt();
-            this.out = sc.nextInt();
-            this.hidden = (in + out) / 2 + 2;
-
-            this.input_data = new double[length][in];
-            this.output_data = new double[length][out];
-
-            for (int l = 0; l < length; l++) {
-                for (int j = 0; j < in; j++) {
-                    input_data[l][j] = sc.nextDouble();
-                }
-                for (int j = 0; j < out; j++) {
-                    output_data[l][j] = sc.nextDouble();
-                }
-            }
-        } catch (IOException e) {
-            System.err.println("ERRO AO LER ARQUIVO DE TREINO: " + trainPath);
-            e.printStackTrace();
-        }
-
+    public Base(String name, int classes) {
+        this.random = new Random();
         String testPath = "bases/datasets/" + name + "/" + name + ".test";
         try (Scanner ts = new Scanner(new File(testPath))) {
             this.test_length = ts.nextInt();
-            ts.nextInt();
-            ts.nextInt();
+            this.in = ts.nextInt();
+            this.out = ts.nextInt();
+            this.hidden = (in + out) / 2;
 
             this.test_input_data = new double[test_length][in];
             this.test_output_data = new double[test_length][out];
@@ -77,12 +50,71 @@ public class Base {
             System.err.println("ERRO AO LER ARQUIVO DE TESTE: " + testPath);
             e.printStackTrace();
         }
+
+        this.name = name.toUpperCase();
+        String classesPath = "bases/datasets/" + name + "/classes/" + "class";
+
+
+        //DESCOBRIR A MAIOR CLASSE
+        int maior_classe = 0;
+        for (int i = 1; i <= classes; i++) {
+            try (Scanner sc = new Scanner(new File(classesPath + i))) {
+                int tamanho = sc.nextInt();
+                if (tamanho > maior_classe)
+                    maior_classe = tamanho;
+            } catch (IOException e) {
+                System.err.println("ERRO AO LER ARQUIVO DE TREINO: " + classesPath + i);
+                e.printStackTrace();
+            }
+        }
+        ArrayList<double[]> input = new ArrayList<>();
+        ArrayList<double[]> output = new ArrayList<>();
+        for (int i = 1; i <= classes; i++) {
+            ArrayList<double[]> linhas_input = new ArrayList<>();
+            ArrayList<double[]> linhas_output = new ArrayList<>();
+            String filename = classesPath + i;
+            try (Scanner sc = new Scanner(new File(filename))) {
+                int classsize = sc.nextInt();
+                for (int j = 0; j < classsize; j++) {
+                    double[] linhaIn = new double[in];
+                    double[] linhaOut = new double[out];
+
+                    for (int k = 0; k < in; k++) {
+                        linhaIn[k] = sc.nextDouble();
+                    }
+                    sc.nextDouble();//FLUSH NO ULTIMO NUMERO
+
+                    linhaOut[linhaOut.length - i] = 1;
+                    linhas_output.add(linhaOut);
+                    linhas_input.add(linhaIn);
+                }
+
+                while (linhas_input.size() < maior_classe) {
+                    linhas_input.add(randomize(linhas_input));
+                    linhas_output.add(duplicate(linhas_output));
+                }
+            } catch (IOException e) {
+                System.err.println("ERRO AO LER ARQUIVO DE TREINO: " + classesPath + i);
+                e.printStackTrace();
+            }
+            input.addAll(linhas_input);
+            output.addAll(linhas_output);
+        }
+        this.input_data = input.toArray(new double[0][0]);
+        this.output_data = output.toArray(new double[0][0]);
+        this.length = input_data.length;
     }
 
-    public Base(int length) {
-        this.length = length;
+    public double[] randomize(ArrayList<double[]> lista) {
+        double[] sample = lista.get(this.random.nextInt(lista.size()));
+        //RANDOMIZAR A SAMPLE AQUI
+        return sample;
     }
 
+    public double[] duplicate(ArrayList<double[]> lista) {
+        double[] sample = lista.get(this.random.nextInt(lista.size()));
+        return sample;
+    }
 
     public void shuffle() {
         if (input_data.length == 0) {
@@ -171,14 +203,6 @@ public class Base {
                 }
             }
         }
-    }
-
-    public int getNumTrainSamples() {
-        return numTrainSamples;
-    }
-
-    public int getNumTestSamples() {
-        return numTestSamples;
     }
 
     public int getIn() {
