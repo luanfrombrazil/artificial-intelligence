@@ -1,12 +1,9 @@
 # artificial-intelligence
 
-Dois projetos acadêmicos de inteligência artificial implementados em Java, do zero, sem bibliotecas de aprendizado de máquina:
+Dois projetos acadêmicos de inteligência artificial implementados em Java sem bibliotecas de aprendizado de máquina:
 
 - **`neural_networks/`** — perceptron simples, perceptron multicamadas e uma rede neural genérica com retropropagação.
 - **`genetic_algorithms/`** — motor de algoritmo genético aplicado a N-Rainhas e a três funções clássicas de otimização contínua.
-
-Escrever tudo à mão é o ponto: é a diferença entre chamar `model.fit()` e saber por que o gradiente da camada oculta é o que é.
-
 ---
 
 ## Sumário
@@ -36,7 +33,6 @@ Escrever tudo à mão é o ponto: é a diferença entre chamar `model.fit()` e s
 **Parte IV — Operação**
 17. [Como compilar e executar](#17-como-compilar-e-executar)
 18. [Limitações conhecidas e preservadas](#18-limitações-conhecidas-e-preservadas)
-19. [Referências](#19-referências)
 
 ---
 
@@ -468,32 +464,6 @@ Algumas escolhas destes projetos não são ótimas, e permanecem assim de propó
 - **Com `alpha` fixo em 0,5**, os dois primeiros filhos do crossover aritmético são numericamente idênticos.
 - **Os domínios divergem da literatura:** Dixon-Price usa `[−n, n]` onde o padrão é `[−10, 10]`; Perm β usa `[−10, 10]` onde o padrão é `[−n, n]`.
 - **Ausentes por escopo:** medida de diversidade por geração, contador de avaliações da função objetivo, bateria automatizada de execuções com média e desvio, curva de convergência exportada.
-
-## 19. Referências
-
-**Fundamentos históricos**
-
-- McCulloch, W. & Pitts, W. (1943). *A Logical Calculus of the Ideas Immanent in Nervous Activity*. Bulletin of Mathematical Biophysics.
-- Hebb, D. (1949). *The Organization of Behavior*.
-- Rosenblatt, F. (1958). *The Perceptron: A Probabilistic Model for Information Storage and Organization in the Brain*. Psychological Review.
-- Widrow, B. & Hoff, M. (1960). *Adaptive Switching Circuits*.
-- Minsky, M. & Papert, S. (1969). *Perceptrons: An Introduction to Computational Geometry*.
-- Werbos, P. (1974). *Beyond Regression* (tese de doutorado, Harvard).
-- Rumelhart, D., Hinton, G. & Williams, R. (1986). *Learning representations by back-propagating errors*. Nature, 323.
-- Cybenko, G. (1989). *Approximation by Superpositions of a Sigmoidal Function*.
-- Hornik, K., Stinchcombe, M. & White, H. (1989). *Multilayer Feedforward Networks are Universal Approximators*.
-
-**Técnicas modernas**
-
-- Hochreiter, S. (1991). Tese sobre o gradiente que desaparece.
-- Glorot, X. & Bengio, Y. (2010). *Understanding the difficulty of training deep feedforward neural networks*.
-- He, K. et al. (2015). *Delving Deep into Rectifiers*.
-
-**Computação evolutiva**
-
-- Holland, J. (1975). *Adaptation in Natural and Artificial Systems*.
-- Goldberg, D. (1989). *Genetic Algorithms in Search, Optimization and Machine Learning*.
-
 **Bases de dados**
 
 - Abalone, Tic-Tac-Toe, Horse Colic e Acute Inflammations — UCI Machine Learning Repository.
