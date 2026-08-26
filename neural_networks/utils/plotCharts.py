@@ -1,166 +1,178 @@
-# Início do código para copiar
+"""
+Geracao de graficos a partir dos CSVs produzidos por neural_networks.utils.Statistics.
 
+Uso, a partir do diretorio neural_networks/:
+
+    python utils/plotCharts.py individual "NeuralNetwork"
+    python utils/plotCharts.py comparativo "NeuralNetwork" "MLP"
+
+O modo 'individual' plota o CSV mais recente de data/. O modo 'comparativo' plota os
+dois mais recentes lado a lado, assumindo que o mais recente e' o primeiro rotulo.
+As imagens vao para img/, criado se nao existir.
+
+Colunas esperadas no CSV:
+    epoch, train_error, train_classification_errors,
+    validation_error, validation_classification_errors,
+    test_error, test_classification_errors
+
+A coluna de validacao fica vazia quando o treinamento roda sem conjunto de validacao.
+
+Dependencias: pandas, matplotlib.
+"""
+
+import glob
 import os
 import sys
-import glob
-import pandas as pd
+
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
+import pandas as pd
+
+# Diretorios resolvidos a partir da localizacao deste arquivo, e nao do diretorio
+# atual: assim o script funciona de onde quer que seja chamado.
+RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DIR_CSV = os.path.join(RAIZ, "data")
+DIR_IMG = os.path.join(RAIZ, "img")
 
 
-# --- FUNÇÕES DE BUSCA DE ARQUIVOS ---
+def csvs_mais_recentes(diretorio, quantidade):
+    """Devolve os N arquivos .csv mais recentes de um diretorio, do mais novo ao mais antigo."""
+    arquivos = glob.glob(os.path.join(diretorio, "*.csv"))
+    if len(arquivos) < quantidade:
+        return []
+    return sorted(arquivos, key=os.path.getmtime, reverse=True)[:quantidade]
 
-def encontrar_csv_mais_recente(diretorio_alvo):
-    """Encontra o arquivo .csv mais recente em um diretório."""
+
+def carregar(caminho):
+    """Le um CSV de estatisticas e devolve o DataFrame, ou None em caso de erro."""
     try:
-        padrao_de_busca = os.path.join(diretorio_alvo, '*.csv')
-        lista_de_csvs = glob.glob(padrao_de_busca)
-        if not lista_de_csvs:
-            return None
-        return max(lista_de_csvs, key=os.path.getmtime)
-    except Exception as e:
-        print(f"Erro ao procurar arquivo: {e}")
+        return pd.read_csv(caminho, sep=",")
+    except Exception as erro:
+        print(f"Erro ao ler '{caminho}': {erro}")
         return None
 
 
-def encontrar_dois_csvs_mais_recentes(diretorio_alvo):
-    """Encontra os dois arquivos .csv mais recentes em um diretório."""
-    try:
-        padrao_de_busca = os.path.join(diretorio_alvo, '*.csv')
-        lista_de_csvs = glob.glob(padrao_de_busca)
-        if len(lista_de_csvs) < 2:
-            return None, None
-        lista_ordenada = sorted(lista_de_csvs, key=os.path.getmtime, reverse=True)
-        return lista_ordenada[0], lista_ordenada[1]
-    except Exception as e:
-        print(f"Erro ao procurar arquivos: {e}")
-        return None, None
+def salvar(fig, nome):
+    """Salva a figura em img/ e fecha para liberar memoria."""
+    os.makedirs(DIR_IMG, exist_ok=True)
+    caminho = os.path.join(DIR_IMG, nome)
+    fig.savefig(caminho, dpi=120, bbox_inches="tight")
+    plt.close(fig)
+    print(f"Grafico salvo em '{caminho}'")
 
 
-# --- FUNÇÕES DE PLOTAGEM ---
+def tem_validacao(df):
+    """Informa se o CSV traz uma coluna de validacao preenchida."""
+    return "validation_error" in df.columns and df["validation_error"].notna().any()
 
-def plotar_grafico_individual(caminho_csv, nome_modelo):
-    """Gera gráficos individuais para um único arquivo CSV."""
-    print(f"Gerando graficos individuais para o modelo: {nome_modelo}")
-    try:
-        os.makedirs("img", exist_ok=True)
-        df = pd.read_csv(caminho_csv, sep=',')
-    except Exception as e:
-        print(f"Erro ao ler o arquivo CSV '{caminho_csv}': {e}")
+
+def plotar_individual(caminho_csv, nome_modelo):
+    """Gera os graficos de erro e de classificacoes incorretas de uma unica execucao."""
+    df = carregar(caminho_csv)
+    if df is None:
         return
 
-    # Gráfico MSE
-    fig1, ax1 = plt.subplots(figsize=(12, 7))
-    ax1.plot(df['epoch'], df['train_mse'], label='MSE de Treino', color='blue')
-    ax1.plot(df['epoch'], df['test_mse'], label='MSE de Teste', color='orange', linestyle='--')
-    ax1.set_title(f'MSE por Época ({nome_modelo})', fontsize=16)
-    ax1.set_xlabel('Época', fontsize=12)
-    ax1.set_ylabel('MSE', fontsize=12)
-    ax1.legend()
-    ax1.grid(True, which='both', linestyle='--', linewidth=0.5)
-    ax1.yaxis.set_major_formatter(mticker.FormatStrFormatter('%.6f'))
-    nome_arquivo_mse = f'../img/grafico_mse_{nome_modelo}.png'
-    plt.savefig(nome_arquivo_mse)
-    print(f"Grafico salvo como '{nome_arquivo_mse}'")
-    plt.close(fig1)
+    print(f"Gerando graficos individuais para: {nome_modelo}")
 
-    # Gráfico de Erros
-    fig2, ax2 = plt.subplots(figsize=(12, 7))
-    ax2.plot(df['epoch'], df['train_classification_errors'], label='Erros de Treino', color='green')
-    ax2.plot(df['epoch'], df['test_classification_errors'], label='Erros de Teste', color='red', linestyle='--')
-    ax2.set_title(f'Erros de Classificacao por Época ({nome_modelo})', fontsize=16)
-    ax2.set_xlabel('Época', fontsize=12)
-    ax2.set_ylabel('Numero de Amostras Erradas', fontsize=12)
-    ax2.legend()
-    ax2.grid(True, which='both', linestyle='--', linewidth=0.5)
-    ax2.yaxis.set_major_locator(mticker.MaxNLocator(integer=True))
-    nome_arquivo_erros = f'../img/grafico_erros_{nome_modelo}.png'
-    plt.savefig(nome_arquivo_erros)
-    print(f"Grafico salvo como '{nome_arquivo_erros}'")
-    plt.close(fig2)
+    fig, ax = plt.subplots(figsize=(12, 7))
+    ax.plot(df["epoch"], df["train_error"], label="Treino", color="#1f77b4")
+    if tem_validacao(df):
+        ax.plot(df["epoch"], df["validation_error"], label="Validacao", color="#2ca02c")
+        melhor = df.loc[df["validation_error"].idxmin()]
+        ax.axvline(melhor["epoch"], color="#2ca02c", linestyle=":", linewidth=1.2)
+        ax.annotate(
+            f"melhor validacao\nepoca {int(melhor['epoch'])}",
+            xy=(melhor["epoch"], melhor["validation_error"]),
+            xytext=(8, 12), textcoords="offset points", fontsize=9, color="#2ca02c",
+        )
+    ax.plot(df["epoch"], df["test_error"], label="Teste", color="#ff7f0e", linestyle="--")
+    ax.set_title(f"Erro medio por epoca ({nome_modelo})", fontsize=15)
+    ax.set_xlabel("Epoca", fontsize=12)
+    ax.set_ylabel("Erro medio por amostra", fontsize=12)
+    ax.legend()
+    ax.grid(True, linestyle="--", linewidth=0.5, alpha=0.6)
+    ax.yaxis.set_major_formatter(mticker.FormatStrFormatter("%.4f"))
+    salvar(fig, f"erro_{nome_modelo}.png")
+
+    fig, ax = plt.subplots(figsize=(12, 7))
+    ax.plot(df["epoch"], df["train_classification_errors"], label="Treino", color="#1f77b4")
+    if tem_validacao(df):
+        ax.plot(df["epoch"], df["validation_classification_errors"], label="Validacao", color="#2ca02c")
+    ax.plot(df["epoch"], df["test_classification_errors"], label="Teste", color="#d62728", linestyle="--")
+    ax.set_title(f"Classificacoes incorretas por epoca ({nome_modelo})", fontsize=15)
+    ax.set_xlabel("Epoca", fontsize=12)
+    ax.set_ylabel("Amostras classificadas incorretamente", fontsize=12)
+    ax.legend()
+    ax.grid(True, linestyle="--", linewidth=0.5, alpha=0.6)
+    ax.yaxis.set_major_locator(mticker.MaxNLocator(integer=True))
+    salvar(fig, f"erros_classificacao_{nome_modelo}.png")
 
 
-def plotar_graficos_comparativos(caminho_csv_recente, caminho_csv_anterior):
-    """Gera gráficos comparativos entre dois arquivos CSV."""
-    print("Gerando graficos comparativos...")
-    try:
-        os.makedirs("img", exist_ok=True)
-        df_recente = pd.read_csv(caminho_csv_recente, sep=',')
-        df_anterior = pd.read_csv(caminho_csv_anterior, sep=',')
-    except Exception as e:
-        print(f"Ocorreu um erro ao ler os arquivos CSV: {e}")
+def plotar_comparativo(csv_a, csv_b, nome_a, nome_b):
+    """Compara duas execucoes no mesmo par de graficos."""
+    df_a = carregar(csv_a)
+    df_b = carregar(csv_b)
+    if df_a is None or df_b is None:
         return
 
-    # Gráfico Comparativo de MSE
-    fig1, ax1 = plt.subplots(figsize=(14, 8))
-    ax1.plot(df_recente['epoch'], df_recente['train_mse'], label='MSE Treino (NeuralNetwork)', color='blue')
-    ax1.plot(df_recente['epoch'], df_recente['test_mse'], label='MSE Teste (NeuralNetwork)', color='deepskyblue',
-             linestyle='--')
-    ax1.plot(df_anterior['epoch'], df_anterior['train_mse'], label='MSE Treino (MLP)', color='red')
-    ax1.plot(df_anterior['epoch'], df_anterior['test_mse'], label='MSE Teste (MLP)', color='tomato', linestyle='--')
-    ax1.set_title('Comparativo de Mean Squared Error (MSE) por Época', fontsize=16)
-    ax1.set_xlabel('Época', fontsize=12)
-    ax1.set_ylabel('MSE', fontsize=12)
-    ax1.legend()
-    ax1.grid(True, which='both', linestyle='--', linewidth=0.5)
-    ax1.yaxis.set_major_formatter(mticker.FormatStrFormatter('%.6f'))
-    nome_arquivo_mse = '../img/comparativo_mse_por_epoca.png'
-    plt.savefig(nome_arquivo_mse)
-    print(f"Grafico comparativo de MSE salvo como '{nome_arquivo_mse}'")
-    plt.close(fig1)
+    print(f"Gerando graficos comparativos: {nome_a} x {nome_b}")
 
-    # Gráfico Comparativo de Erros
-    fig2, ax2 = plt.subplots(figsize=(14, 8))
-    ax2.plot(df_recente['epoch'], df_recente['train_classification_errors'], label='Erros Treino (NeuralNetwork)',
-             color='green')
-    ax2.plot(df_recente['epoch'], df_recente['test_classification_errors'], label='Erros Teste (NeuralNetwork)',
-             color='lime', linestyle='--')
-    ax2.plot(df_anterior['epoch'], df_anterior['train_classification_errors'], label='Erros Treino (MLP)',
-             color='purple')
-    ax2.plot(df_anterior['epoch'], df_anterior['test_classification_errors'], label='Erros Teste (MLP)', color='violet',
-             linestyle='--')
-    ax2.set_title('Comparativo de Erros de Classificacao por Época', fontsize=16)
-    ax2.set_xlabel('Época', fontsize=12)
-    ax2.set_ylabel('Numero de Amostras Erradas', fontsize=12)
-    ax2.legend()
-    ax2.grid(True, which='both', linestyle='--', linewidth=0.5)
-    ax2.yaxis.set_major_locator(mticker.MaxNLocator(integer=True))
-    nome_arquivo_erros = '../img/comparativo_erros_classificacao.png'
-    plt.savefig(nome_arquivo_erros)
-    print(f"Grafico comparativo de erros salvo como '{nome_arquivo_erros}'")
-    plt.close(fig2)
+    fig, ax = plt.subplots(figsize=(14, 8))
+    ax.plot(df_a["epoch"], df_a["train_error"], label=f"Treino ({nome_a})", color="#1f77b4")
+    ax.plot(df_a["epoch"], df_a["test_error"], label=f"Teste ({nome_a})", color="#7fbfe0", linestyle="--")
+    ax.plot(df_b["epoch"], df_b["train_error"], label=f"Treino ({nome_b})", color="#d62728")
+    ax.plot(df_b["epoch"], df_b["test_error"], label=f"Teste ({nome_b})", color="#f0a1a0", linestyle="--")
+    ax.set_title("Comparativo de erro medio por epoca", fontsize=15)
+    ax.set_xlabel("Epoca", fontsize=12)
+    ax.set_ylabel("Erro medio por amostra", fontsize=12)
+    ax.legend()
+    ax.grid(True, linestyle="--", linewidth=0.5, alpha=0.6)
+    ax.yaxis.set_major_formatter(mticker.FormatStrFormatter("%.4f"))
+    salvar(fig, "comparativo_erro.png")
+
+    fig, ax = plt.subplots(figsize=(14, 8))
+    ax.plot(df_a["epoch"], df_a["train_classification_errors"], label=f"Treino ({nome_a})", color="#2ca02c")
+    ax.plot(df_a["epoch"], df_a["test_classification_errors"], label=f"Teste ({nome_a})", color="#98df8a", linestyle="--")
+    ax.plot(df_b["epoch"], df_b["train_classification_errors"], label=f"Treino ({nome_b})", color="#9467bd")
+    ax.plot(df_b["epoch"], df_b["test_classification_errors"], label=f"Teste ({nome_b})", color="#c5b0d5", linestyle="--")
+    ax.set_title("Comparativo de classificacoes incorretas por epoca", fontsize=15)
+    ax.set_xlabel("Epoca", fontsize=12)
+    ax.set_ylabel("Amostras classificadas incorretamente", fontsize=12)
+    ax.legend()
+    ax.grid(True, linestyle="--", linewidth=0.5, alpha=0.6)
+    ax.yaxis.set_major_locator(mticker.MaxNLocator(integer=True))
+    salvar(fig, "comparativo_erros_classificacao.png")
 
 
-# --- BLOCO DE EXECUÇÃO PRINCIPAL ---
-if __name__ == '__main__':
-    diretorio_dos_csvs = '../data'
+def main():
+    modo = sys.argv[1] if len(sys.argv) > 1 else "individual"
 
-    modo = 'comparativo'
-    if len(sys.argv) > 1:
-        modo = sys.argv[1]
+    if modo == "individual":
+        nome = sys.argv[2] if len(sys.argv) > 2 else "modelo"
+        arquivos = csvs_mais_recentes(DIR_CSV, 1)
+        if not arquivos:
+            print(f"ERRO: nenhum arquivo .csv encontrado em '{DIR_CSV}'.")
+            return 1
+        print(f"Arquivo: {os.path.basename(arquivos[0])}")
+        plotar_individual(arquivos[0], nome)
 
-    # --- LÓGICA DE CONTROLE ---
-    if modo == 'comparativo':
-        print(
-            f"MODO COMPARATIVO: Procurando pelos dois arquivos CSV mais recentes em '{os.path.abspath(diretorio_dos_csvs)}'")
-        csv_recente, csv_anterior = encontrar_dois_csvs_mais_recentes(diretorio_dos_csvs)
-        if csv_recente and csv_anterior:
-            print("Arquivos encontrados:")
-            print(f"  - Mais recente (NeuralNetwork): {os.path.basename(csv_recente)}")
-            print(f"  - 2º mais recente (MLP):      {os.path.basename(csv_anterior)}")
-            plotar_graficos_comparativos(csv_recente, csv_anterior)
-        else:
-            print("ERRO: Nao foi possivel encontrar pelo menos dois arquivos .csv no diretorio.")
+    elif modo == "comparativo":
+        nome_a = sys.argv[2] if len(sys.argv) > 2 else "recente"
+        nome_b = sys.argv[3] if len(sys.argv) > 3 else "anterior"
+        arquivos = csvs_mais_recentes(DIR_CSV, 2)
+        if not arquivos:
+            print(f"ERRO: sao necessarios ao menos dois arquivos .csv em '{DIR_CSV}'.")
+            return 1
+        print(f"Mais recente ({nome_a}): {os.path.basename(arquivos[0])}")
+        print(f"Anterior    ({nome_b}): {os.path.basename(arquivos[1])}")
+        plotar_comparativo(arquivos[0], arquivos[1], nome_a, nome_b)
 
-    elif modo == 'individual':
-        print(f"MODO INDIVIDUAL: Procurando pelo arquivo CSV mais recente em '{os.path.abspath(diretorio_dos_csvs)}'")
-        csv_recente = encontrar_csv_mais_recente(diretorio_dos_csvs)
-        if csv_recente:
-            print(f"Arquivo encontrado: {os.path.basename(csv_recente)}")
-            plotar_grafico_individual(csv_recente, sys.argv[2])
-        else:
-            print("ERRO: Nenhum arquivo .csv foi encontrado no diretorio.")
     else:
-        print(f"ERRO: Modo '{modo}' invalido.")
-        print("Modos validos: 'comparativo' ou 'individual'.")
-        print("Exemplo de uso: python plotCharts.py individual")
+        print(f"ERRO: modo '{modo}' invalido. Use 'individual' ou 'comparativo'.")
+        return 1
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
