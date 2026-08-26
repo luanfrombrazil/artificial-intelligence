@@ -9,6 +9,7 @@ Dois projetos acadêmicos de inteligência artificial implementados em Java sem 
 ## Sumário
 
 **Parte I — Redes neurais artificiais**
+
 1. [O neurônio como unidade de cálculo](#1-o-neurônio-como-unidade-de-cálculo)
 2. [O perceptron de Rosenblatt](#2-o-perceptron-de-rosenblatt)
 3. [O limite: separabilidade linear](#3-o-limite-separabilidade-linear)
@@ -19,6 +20,7 @@ Dois projetos acadêmicos de inteligência artificial implementados em Java sem 
 8. [O que quebrou depois, e como foi consertado](#8-o-que-quebrou-depois-e-como-foi-consertado)
 
 **Parte II — O projeto de redes neurais**
+
 9. [As três implementações](#9-as-três-implementações)
 10. [Estrutura do código](#10-estrutura-do-código)
 11. [Verificação numérica do gradiente](#11-verificação-numérica-do-gradiente)
@@ -27,10 +29,12 @@ Dois projetos acadêmicos de inteligência artificial implementados em Java sem 
 14. [Formato das bases](#14-formato-das-bases)
 
 **Parte III — Algoritmos genéticos**
+
 15. [A ideia da computação evolutiva](#15-a-ideia-da-computação-evolutiva)
 16. [O motor e os problemas](#16-o-motor-e-os-problemas)
 
 **Parte IV — Operação**
+
 17. [Como compilar e executar](#17-como-compilar-e-executar)
 18. [Limitações conhecidas e preservadas](#18-limitações-conhecidas-e-preservadas)
 
